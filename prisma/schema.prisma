@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/database/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  name          String
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+}
+
+model Stock {
+  id           Int      @id @default(autoincrement())
+  total_tables Int
+  total_chairs Int
+  total_kits   Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}
+
+model Customer {
+  id              Int      @id @default(autoincrement())
+  name            String
+  phone           String
+  address         String
+  district        String
+  reference_point String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  orders          Order[]
+}
+
+enum OrderType {
+  PENDING_DELIVERY
+  DELIVERED
+  PENDING_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  customer_id   Int
+  customer      Customer    @relation(fields: [customer_id], references: [id])
+  delivery_date DateTime
+  pickup_date   DateTime
+  status        OrderType
+  total_price   Decimal
+  observations  String?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+  items         OrderItem[]
+
+  @@index([status])
+  @@index([delivery_date])
+  @@index([pickup_date])
+}
+
+enum OrderItemType {
+  TABLE
+  CHAIR
+  KIT_TABLE_CHAIR
+}
+
+model OrderItem {
+  id         Int           @id @default(autoincrement())
+  order_id   Int
+  order      Order         @relation(fields: [order_id], references: [id])
+  type       OrderItemType
+  quantity   Int
+  unit_price Decimal
+  subtotal   Decimal
+  created_at DateTime      @default(now())
+  updated_at DateTime      @updatedAt
+}
