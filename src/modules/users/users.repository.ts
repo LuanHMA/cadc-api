@@ -1,3 +1,4 @@
+import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../database/prisma.service.js";
 import { User } from "./users.entities.js";
 
@@ -12,6 +13,7 @@ export type UpdateUserInput = {
     name?: string
 }
 
+@Injectable()
 export class UsersRepository {
     constructor(private readonly prisma: PrismaService){}
 
