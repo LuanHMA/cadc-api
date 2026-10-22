@@ -13,16 +13,29 @@ datasource db {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
+  id            String    @id @default(uuid())
   name          String
-  email         String   @unique
+  email         String    @unique
   password_hash String
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  sessions      Session[]
+}
+
+model Session {
+  id                 String    @id @default(uuid())
+  user_id            String
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  refresh_token_hash String
+  expires_at         DateTime
+  revoked_at         DateTime?
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  @@index([user_id])
 }
 
 model Stock {
-  id           Int      @id @default(autoincrement())
+  id           String   @id @default(uuid())
   total_tables Int
   total_chairs Int
   total_kits   Int
@@ -31,7 +44,7 @@ model Stock {
 }
 
 model Customer {
-  id              Int      @id @default(autoincrement())
+  id              String   @id @default(uuid())
   name            String
   phone           String
   address         String
@@ -51,8 +64,8 @@ enum OrderType {
 }
 
 model Order {
-  id            Int         @id @default(autoincrement())
-  customer_id   Int
+  id            String      @id @default(uuid())
+  customer_id   String
   customer      Customer    @relation(fields: [customer_id], references: [id])
   delivery_date DateTime
   pickup_date   DateTime
@@ -75,8 +88,8 @@ enum OrderItemType {
 }
 
 model OrderItem {
-  id         Int           @id @default(autoincrement())
-  order_id   Int
+  id         String        @id @default(uuid())
+  order_id   String
   order      Order         @relation(fields: [order_id], references: [id])
   type       OrderItemType
   quantity   Int

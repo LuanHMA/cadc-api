@@ -1,4 +1,4 @@
-## Login
+### Login
 POST http://localhost:3000/auth/login HTTP/1.1
 content-type: application/json
 
@@ -7,7 +7,7 @@ content-type: application/json
     "password": "admin123"
 }
 
-## Register
+### Register
 POST http://localhost:3000/auth/register HTTP/1.1
 content-type: application/json
 
