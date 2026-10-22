@@ -63,6 +63,14 @@ enum OrderType {
   CANCELLED
 }
 
+enum OrderPaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  OTHER
+}
+
 model Order {
   id            String      @id @default(uuid())
   customer_id   String
@@ -71,6 +79,7 @@ model Order {
   pickup_date   DateTime
   status        OrderType
   total_price   Decimal
+  payment_method OrderPaymentMethod
   observations  String?
   created_at    DateTime    @default(now())
   updated_at    DateTime    @updatedAt

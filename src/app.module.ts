@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.js';
 import { PrismaModule } from './database/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
@@ -14,6 +15,7 @@ import { UsersModule } from './modules/users/users.module.js';
     PrismaModule,
     UsersModule,
     AuthModule,
+    OrdersModule,
   ],
   controllers: [],
   providers: [],
