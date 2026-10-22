@@ -31,16 +31,19 @@ model Session {
   revoked_at         DateTime?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
+
   @@index([user_id])
 }
 
-model Stock {
-  id           String   @id @default(uuid())
-  total_tables Int
-  total_chairs Int
-  total_kits   Int
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+model Product {
+  id                String   @id @default(uuid())
+  name              String
+  stock             Int
+  unit_price        Decimal
+  promocional_price Decimal?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  order_items       OrderItem[]
 }
 
 model Customer {
@@ -72,38 +75,36 @@ enum OrderPaymentMethod {
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  customer_id   String
-  customer      Customer    @relation(fields: [customer_id], references: [id])
-  delivery_date DateTime
-  pickup_date   DateTime
-  status        OrderType
-  total_price   Decimal
+  id             String             @id @default(uuid())
+  customer_id    String
+  customer       Customer           @relation(fields: [customer_id], references: [id])
+  delivery_date  DateTime
+  pickup_date    DateTime
+  status         OrderType
+  total_price    Decimal
   payment_method OrderPaymentMethod
-  observations  String?
-  created_at    DateTime    @default(now())
-  updated_at    DateTime    @updatedAt
-  items         OrderItem[]
+  observations   String?
+  created_at     DateTime           @default(now())
+  updated_at     DateTime           @updatedAt
+  items          OrderItem[]
 
   @@index([status])
   @@index([delivery_date])
   @@index([pickup_date])
 }
 
-enum OrderItemType {
-  TABLE
-  CHAIR
-  KIT_TABLE_CHAIR
-}
-
 model OrderItem {
-  id         String        @id @default(uuid())
+  id         String   @id @default(uuid())
   order_id   String
-  order      Order         @relation(fields: [order_id], references: [id])
-  type       OrderItemType
+  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id String
+  product    Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
   quantity   Int
   unit_price Decimal
   subtotal   Decimal
-  created_at DateTime      @default(now())
-  updated_at DateTime      @updatedAt
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([order_id])
+  @@index([product_id])
 }

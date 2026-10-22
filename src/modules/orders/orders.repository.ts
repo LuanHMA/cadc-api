@@ -1,12 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
-import { Order, OrderItem, OrderItemType, OrderPaymentMethod, OrderType } from "./orders.entities.js";
+import { Order, OrderItem, OrderPaymentMethod, OrderType } from "./orders.entities.js";
 
 interface FindAllOrdersInput {
     page?: number
     limit?: number
     search?: string
+    delivery_date?: Date
+    pickup_date?: Date
     status?: OrderType
     sort?: "asc" | "desc"
 }
@@ -19,6 +21,7 @@ interface CreateOrderInput {
     payment_method: OrderPaymentMethod,
     total_price: number,
     observations?: string,
+    items: CreateOrderItemInput[],
 }
 
 interface UpdateOrderInput {
@@ -32,14 +35,14 @@ interface UpdateOrderInput {
 }
 
 interface CreateOrderItemInput {
-    type: OrderItemType,
+    product_id: string,
     quantity: number,
     unit_price: number,
     subtotal: number,
 }
 
 interface UpdateOrderItemInput {
-    type?: OrderItemType,
+    product_id?: string,
     quantity?: number,
     unit_price?: number,
     subtotal?: number,
@@ -54,11 +57,15 @@ export class OrdersRepository {
         limit = 20,
         search = "",
         status,
+        delivery_date,
+        pickup_date,
         sort = "desc",
     }: FindAllOrdersInput) {
 
         const where: Prisma.OrderWhereInput = {
             ...(status ? { status } : undefined),
+            ...(delivery_date ? { delivery_date } : undefined),
+            ...(pickup_date ? { pickup_date } : undefined),
             ...(search ? {
                 OR: [
                     { customer: { name: { contains: search, mode: "insensitive" } } },
@@ -84,8 +91,13 @@ export class OrdersRepository {
                 items: {
                     select: {
                         id: true,
-                        type: true,
+                        product_id: true,
                         quantity: true,
+                        product: {
+                            select: {
+                                name: true,
+                            },
+                        },
                     }
                 }
             }
@@ -111,10 +123,15 @@ export class OrdersRepository {
                 },
                 items: {
                     select: {
-                        type: true,
+                        product_id: true,
                         quantity: true,
                         unit_price: true,
                         subtotal: true,
+                        product: {
+                            select: {
+                                name: true,
+                            },
+                        },
                     }
                 }
             }
@@ -131,8 +148,8 @@ export class OrdersRepository {
         payment_method,
         total_price,
         observations,
+        items
     }: CreateOrderInput) {
-
         const order = await this.prisma.order.create({
             data: {
                 customer_id,
@@ -142,6 +159,14 @@ export class OrdersRepository {
                 payment_method,
                 total_price,
                 observations: observations ?? null,
+                items: {
+                    create: items.map((item) => ({
+                        product_id: item.product_id,
+                        quantity: item.quantity,
+                        unit_price: item.unit_price,
+                        subtotal: item.subtotal,
+                    })),
+                },
             },
         })
 
@@ -184,7 +209,7 @@ export class OrdersRepository {
     }
 
     async createItem(order_id: Order['id'], {
-        type,
+        product_id,
         quantity,
         unit_price,
         subtotal,
@@ -192,7 +217,7 @@ export class OrdersRepository {
         const item = await this.prisma.orderItem.create({
             data: {
                 order_id,
-                type,
+                product_id,
                 quantity,
                 unit_price,
                 subtotal,
@@ -203,7 +228,7 @@ export class OrdersRepository {
     }
 
     async updateItem(item_id: OrderItem['id'], {
-        type,
+        product_id,
         quantity,
         unit_price,
         subtotal,
@@ -213,7 +238,7 @@ export class OrdersRepository {
                 id: item_id,
             },
             data: {
-                type,
+                product_id,
                 quantity,
                 unit_price,
                 subtotal,
