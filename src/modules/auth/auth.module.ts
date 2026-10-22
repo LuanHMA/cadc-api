@@ -1,19 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { Bcrypt } from '../../common/crypto/bcrypt.js';
 import { Env } from '../../config/env.js';
 import { SessionModule } from '../session/session.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { AccessTokenService } from './access-token.service.js';
 import { AuthController } from './auth.controller.js';
+import { AuthCookies } from './auth.cookies.js';
 import { AuthService } from './auth.service.js';
+import { AuthGuard } from './guards/auth.guard.js';
+import { Bcrypt } from './utils/bcrypt.js';
 
 @Module({
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    Bcrypt,
-  ],
   imports: [
     SessionModule,
     UsersModule,
@@ -26,6 +25,14 @@ import { AuthService } from './auth.service.js';
         }
       }),
     }),
-  ]
+  ],
+  controllers: [AuthController],
+  providers: [
+    AuthService,
+    AccessTokenService,
+    AuthCookies,
+    Bcrypt,
+    { provide: APP_GUARD, useClass: AuthGuard },
+  ],
 })
 export class AuthModule { }

@@ -1,11 +1,12 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { generateOpaqueToken, sha256 } from "../../common/crypto/token.js";
+import { generateOpaqueToken, sha256 } from "./utils/token.js";
 import { Env } from "../../config/env.js";
 import { User } from "../users/users.entities.js";
 import { Session } from "./session.entities.js";
 import { SessionRepository } from "./session.repository.js";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class SessionService {
@@ -40,8 +41,9 @@ export class SessionService {
 
         const { count } = await this.sessionRepository.rotate({
             id: sid,
-            refresh_token_hash: sha256(secret),
-            expires_at: this.expiresAt()
+            current_hash: sha256(secret),
+            new_hash: sha256(newSecret),
+            expires_at: this.expiresAt(),
         });
 
         if (count === 0) {
@@ -60,12 +62,12 @@ export class SessionService {
         await this.sessionRepository.revoke(sessionId);
     }
 
-    async isActive(sessionId: Session["id"]) {
+    async isActive(sessionId: Session["id"]): Promise<boolean> {
         const session = await this.sessionRepository.findBySessionId(sessionId);
 
-        if(!session) throw new UnauthorizedException('Sessão inválida');
+        if (!session) return false;
 
-        return session.expires_at > new Date() && session.revoked_at === null;
+        return session.revoked_at === null && session.expires_at > new Date();
     }
 
     async revokeAll(userId: User["id"]) {
@@ -74,6 +76,6 @@ export class SessionService {
 
     private expiresAt() {
         const days = this.config.get('REFRESH_TOKEN_TTL_DAYS', { infer: true })
-        return new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+        return new Date(Date.now() + days * MS_PER_DAY)
     }
 }

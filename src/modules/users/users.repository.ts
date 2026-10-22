@@ -17,6 +17,14 @@ export type UpdateUserInput = {
 export class UsersRepository {
     constructor(private readonly prisma: PrismaService){}
 
+    async findById(id: User['id']): Promise<User | null>{
+        return this.prisma.user.findUnique({
+            where: {
+                id
+            }
+        })
+    }
+
     async findByEmail(email: User['email']): Promise<User | null>{
         return this.prisma.user.findUnique({
             where: {

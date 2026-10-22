@@ -5,34 +5,34 @@ import { Session } from "./session.entities.js";
 
 type CreateSessionInput = Pick<Session, "user_id" | "refresh_token_hash" | "expires_at">
 
-type UpdateSessionInput = Pick<Session, "id" | "refresh_token_hash" | "expires_at">
+type RotateSessionInput = {
+    id: Session["id"]
+    current_hash: string
+    new_hash: string
+    expires_at: Date
+}
 
 @Injectable()
 export class SessionRepository {
     constructor(private readonly prisma: PrismaService) { }
 
-    async create({ user_id, refresh_token_hash, expires_at }: CreateSessionInput) {
-        return this.prisma.session.create({
-            data: {
-                user_id,
-                refresh_token_hash,
-                expires_at,
-            }
-        })
+    async create(data: CreateSessionInput): Promise<Session> {
+        return this.prisma.session.create({ data })
     }
 
-    async rotate({ id, refresh_token_hash, expires_at }: UpdateSessionInput) {
+    async rotate({ id, current_hash, new_hash, expires_at }: RotateSessionInput) {
         return this.prisma.session.updateMany({
-            where: { id },
-            data: {
-                refresh_token_hash,
-                expires_at,
-                revoked_at: null
-            }
+            where: {
+                id,
+                refresh_token_hash: current_hash,
+                revoked_at: null,
+                expires_at: { gt: new Date() },
+            },
+            data: { refresh_token_hash: new_hash, expires_at },
         });
     }
 
-    async findBySessionId(sessionId: Session["id"]) {
+    async findBySessionId(sessionId: Session["id"]): Promise<Session | null> {
         return this.prisma.session.findUnique({
             where: { id: sessionId }
         });
@@ -40,14 +40,14 @@ export class SessionRepository {
 
     async revoke(sessionId: Session["id"]) {
         await this.prisma.session.updateMany({
-            where: { id: sessionId },
+            where: { id: sessionId, revoked_at: null },
             data: { revoked_at: new Date() }
         });
     }
 
     async revokeAll(userId: User["id"]) {
         await this.prisma.session.updateMany({
-            where: { user_id: userId },
+            where: { user_id: userId, revoked_at: null },
             data: { revoked_at: new Date() }
         });
     }

@@ -6,11 +6,3 @@ export const LoginDtoSchema = z.object({
 }).strict();
 
 export type LoginDto = z.infer<typeof LoginDtoSchema>;
-
-export type LoginResponseDto = {
-    accessToken: string;
-    refreshToken: string;
-}
-
-
-

@@ -7,8 +7,3 @@ export const registerDtoSchema = z.object({
 }).strict()
 
 export type RegisterDto = z.infer<typeof registerDtoSchema>
-
-export type RegisterResponseDto = { 
-    accessToken: string;
-    refreshToken: string;
-}
