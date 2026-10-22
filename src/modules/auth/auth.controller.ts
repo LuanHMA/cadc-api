@@ -2,11 +2,10 @@ import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post,
 import type { Request, Response } from 'express';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
 import { AuthCookies } from './auth.cookies.js';
+import { LoginDtoSchema, registerDtoSchema, type LoginDto, type RegisterDto } from './auth.dtos.js';
 import { AuthService } from './auth.service.js';
 import { CurrentUser } from './decorators/current-user.decorator.js';
 import { Public } from './decorators/public.decorator.js';
-import { LoginDtoSchema, type LoginDto } from './dtos/login.dto.js';
-import { registerDtoSchema, type RegisterDto } from './dtos/register.dto.js';
 import type { JwtPayload } from './types/jwt-payload.js';
 
 @Controller('auth')

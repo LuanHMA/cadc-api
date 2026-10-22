@@ -5,8 +5,7 @@ import { PublicUser, User } from '../users/users.entities.js';
 import { toPublicUser } from '../users/users.mapper.js';
 import { UsersRepository } from '../users/users.repository.js';
 import { AccessTokenService } from './access-token.service.js';
-import { type LoginDto } from './dtos/login.dto.js';
-import { type RegisterDto } from './dtos/register.dto.js';
+import { type LoginDto, type RegisterDto } from './auth.dtos.js';
 import { AuthResult, AuthTokens } from './types/auth-tokens.js';
 import { Bcrypt } from './utils/bcrypt.js';
 
