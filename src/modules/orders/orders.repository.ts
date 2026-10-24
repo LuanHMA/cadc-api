@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
+import { ProductType } from "../products/products.entities.js";
 import { Order, OrderItem, OrderPaymentMethod, OrderType } from "./orders.entities.js";
 
 interface FindAllOrdersInput {
@@ -35,14 +36,14 @@ interface UpdateOrderInput {
 }
 
 interface CreateOrderItemInput {
-    product_id: string,
+    product_id: ProductType,
     quantity: number,
     unit_price: number,
     subtotal: number,
 }
 
 interface UpdateOrderItemInput {
-    product_id?: string,
+    product_id?: ProductType,
     quantity?: number,
     unit_price?: number,
     subtotal?: number,

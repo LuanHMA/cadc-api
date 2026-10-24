@@ -39,24 +39,27 @@ const CUSTOMERS = [
 
 const PRODUCTS = [
   {
+    id: 'TABLE',
     name: 'Mesa',
     stock: MESA_STOCK,
     unit_price: '3.00',
     promocional_price: '2.00',
   },
   {
+    id: 'CHAIR',
     name: 'Cadeira',
     stock: CADEIRA_STOCK,
     unit_price: '3.00',
     promocional_price: '2.00',
   },
   {
+    id: 'KIT',
     name: 'Combo 1 mesa e 4 cadeiras',
     stock: COMBO_STOCK,
     unit_price: '10.00',
     promocional_price: null,
   },
-]
+] as const
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,

@@ -26,7 +26,7 @@ export const CreateOrderBodySchema = z.object({
     payment_method: OrderPaymentMethodSchema,
     observations: z.string("Observações inválidas").optional(),
     items: z.array(z.object({
-        product_id: z.string("ID do produto inválido").uuid('ID do produto é obrigatório'),
+        product_id: z.enum(["TABLE", "CHAIR", "KIT"], "Produto inválido"),
         quantity: z.number("Quantidade inválida").int("Quantidade inválida").min(1, "Quantidade inválida"),
     })).min(1, "O pedido deve ter ao menos um item"),
 }).strict();

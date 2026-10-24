@@ -3,8 +3,7 @@ import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import { Product } from "./products.entities.js";
 
-type CreateProductData = Omit<Product, 'id' | 'created_at' | 'updated_at'>
-type UpdateProductData = Partial<CreateProductData>
+type UpdateProductData = Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>
 type ProductRecord = Prisma.ProductGetPayload<{}>
 
 @Injectable()
@@ -14,14 +13,6 @@ export class ProductsRepository {
     async findAll() {
         const products = await this.prisma.product.findMany()
         return products
-    }
-
-    async create(data: CreateProductData): Promise<Product> {
-        const product = await this.prisma.product.create({
-            data,
-        })
-
-        return this.toEntity(product)
     }
 
     async findUnique(id: Product['id'], tx: Prisma.TransactionClient = this.prisma): Promise<Product | null> {
@@ -38,35 +29,12 @@ export class ProductsRepository {
         return this.toEntity(product)
     }
 
-    async findByName(name: Product['name']): Promise<Product | null> {
-        const product = await this.prisma.product.findUnique({
-            where: {
-                name,
-            },
-        })
-        if (!product) {
-            return null
-        }
-
-        return this.toEntity(product)
-    }
-
     async update(id: Product['id'], data: UpdateProductData): Promise<Product> {
         const product = await this.prisma.product.update({
             where: {
                 id,
             },
             data,
-        })
-
-        return this.toEntity(product)
-    }
-
-    async delete(id: Product['id']): Promise<Product> {
-        const product = await this.prisma.product.delete({
-            where: {
-                id,
-            },
         })
 
         return this.toEntity(product)

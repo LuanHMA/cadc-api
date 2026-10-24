@@ -1,5 +1,10 @@
+export type ProductType =
+    | "TABLE"
+    | "CHAIR"
+    | "KIT"
+
 export interface Product {
-    id: string
+    id: ProductType
     name: string
     stock: number
     unit_price: number

@@ -35,14 +35,20 @@ model Session {
   @@index([user_id])
 }
 
+enum ProductType {
+  TABLE
+  CHAIR
+  KIT
+}
+
 model Product {
-  id                String   @id @default(uuid())
-  name              String   @unique
+  id                ProductType @id
+  name              String      @unique
   stock             Int
   unit_price        Decimal
   promocional_price Decimal?
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  created_at        DateTime    @default(now())
+  updated_at        DateTime    @updatedAt
   order_items       OrderItem[]
 }
 
@@ -94,16 +100,16 @@ model Order {
 }
 
 model OrderItem {
-  id         String   @id @default(uuid())
+  id         String      @id @default(uuid())
   order_id   String
-  order      Order    @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product_id String
-  product    Product  @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  order      Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id ProductType
+  product    Product     @relation(fields: [product_id], references: [id], onDelete: Restrict)
   quantity   Int
   unit_price Decimal
   subtotal   Decimal
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
 
   @@index([order_id])
   @@index([product_id])

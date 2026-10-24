@@ -1,3 +1,5 @@
+import { ProductType } from "../products/products.entities.js"
+
 export type OrderType = 
     | "PENDING_DELIVERY" 
     | "DELIVERED" 
@@ -26,15 +28,10 @@ export interface Order {
     updated_at: Date
 }
 
-export type OrderItemType =
-    | "TABLE"
-    | "CHAIR"
-    | "KIT_TABLE_CHAIR"
-
 export interface OrderItem {
     id: string
     order_id: string
-    type: OrderItemType
+    product_id: ProductType
     quantity: number
     unit_price: number
     subtotal: number
