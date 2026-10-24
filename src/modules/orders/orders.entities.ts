@@ -11,6 +11,7 @@ export type OrderPaymentMethod =
     | "CREDIT_CARD"
     | "DEBIT_CARD"
     | "PIX"
+    | "OTHER"
 
 export interface Order {
     id: string

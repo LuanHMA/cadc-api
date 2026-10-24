@@ -37,7 +37,7 @@ model Session {
 
 model Product {
   id                String   @id @default(uuid())
-  name              String
+  name              String   @unique
   stock             Int
   unit_price        Decimal
   promocional_price Decimal?
@@ -49,7 +49,7 @@ model Product {
 model Customer {
   id              String   @id @default(uuid())
   name            String
-  phone           String
+  phone           String   @unique
   address         String
   district        String
   reference_point String?

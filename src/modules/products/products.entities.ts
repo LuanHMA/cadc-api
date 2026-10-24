@@ -3,7 +3,7 @@ export interface Product {
     name: string
     stock: number
     unit_price: number
-    promocional_price: number
+    promocional_price: number | null
     created_at: Date
     updated_at: Date
 }

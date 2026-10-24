@@ -4,7 +4,7 @@ export interface Customer {
     phone: string
     address: string
     district: string
-    reference_point: string
+    reference_point: string | null
     created_at: Date
     updated_at: Date
 }

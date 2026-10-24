@@ -7,6 +7,7 @@ import { CustomersService } from "./customers.service.js";
     imports: [],
     controllers: [CustomersController],
     providers: [CustomersService, CustomersRepository],
+    exports: [CustomersService]
 })
 
 export class CustomersModule { }
