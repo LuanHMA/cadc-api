@@ -1,5 +1,5 @@
 import z from "zod";
-
+import { ProductStockItemDto } from "../products/products.dto.js";
 
 // FIND ALL ORDERS DTO
 const OrderTypeSchema = z.enum(["PENDING_DELIVERY", "DELIVERED", "PENDING_PICKUP", "COMPLETED", "CANCELLED"]);
@@ -16,11 +16,6 @@ export const FindAllOrdersQuerySchema = z.object({
 
 export type FindAllOrdersDto = z.infer<typeof FindAllOrdersQuerySchema>;
 
-
-// FIND ONE ORDER DTO
-export const FindOneOrderParamSchema = z.string("ID da ordem inválido").uuid('ID da ordem é obrigatório');
-export type FindOneOrderDto = z.infer<typeof FindOneOrderParamSchema>;
-
 // CREATE ORDER DTO
 const OrderPaymentMethodSchema = z.enum(["CASH", "CREDIT_CARD", "DEBIT_CARD", "PIX", "OTHER"]);
 
@@ -32,10 +27,15 @@ export const CreateOrderBodySchema = z.object({
     observations: z.string("Observações inválidas").optional(),
     items: z.array(z.object({
         product_id: z.string("ID do produto inválido").uuid('ID do produto é obrigatório'),
-        quantity: z.number("Quantidade inválida").min(1, "Quantidade inválida"),
-    })),
+        quantity: z.number("Quantidade inválida").int("Quantidade inválida").min(1, "Quantidade inválida"),
+    })).min(1, "O pedido deve ter ao menos um item"),
 }).strict();
 
 export type CreateOrderDto = z.infer<typeof CreateOrderBodySchema>;
 
-
+// CREATE PENDING ORDER DTO
+export type CreatePendingOrderDto = {
+    order: CreateOrderDto,
+    totalPrice: number,
+    productItems: ProductStockItemDto[]
+}

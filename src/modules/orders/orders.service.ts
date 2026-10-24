@@ -1,16 +1,20 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "../../database/generated/prisma/client.js";
+import { PrismaService } from "../../database/prisma.service.js";
 import { CustomersService } from "../customers/customers.service.js";
-import { Product } from "../products/products.entities.js";
-import { ProductsRepository } from "../products/products.repository.js";
-import { CreateOrderDto, FindAllOrdersDto, FindOneOrderDto } from "./orders.dto.js";
+import { ProductStockItemDto } from "../products/products.dto.js";
+import { ProductsService } from "../products/products.service.js";
+import { CreateOrderDto, CreatePendingOrderDto, FindAllOrdersDto } from "./orders.dto.js";
+import { Order } from "./orders.entities.js";
 import { OrdersRepository } from "./orders.repository.js";
 
 @Injectable()
 export class OrderService {
     constructor(
+        private readonly prisma: PrismaService,
         private readonly ordersRepository: OrdersRepository,
         private readonly customersService: CustomersService,
-        private readonly productsRepository: ProductsRepository
+        private readonly productsService: ProductsService
     ) { }
 
     async findAll(data: FindAllOrdersDto) {
@@ -18,8 +22,8 @@ export class OrderService {
         return orders
     }
 
-    async findOne(data: FindOneOrderDto) {
-        const order = await this.ordersRepository.findOne(data)
+    async findOne(id: Order['id']) {
+        const order = await this.ordersRepository.findOne(id)
 
         if (!order) {
             throw new NotFoundException('Ordem não encontrada')
@@ -29,61 +33,44 @@ export class OrderService {
     }
 
     async create(data: CreateOrderDto) {
-        // Validar se o cliente existe
         await this.customersService.findUnique(data.customer_id)
 
-        // Validar se os produtos existem e se o estoque é suficiente
-        const items: { product: Product, quantity: number }[] = []
-        const soldOutProducts: Product[] = []
+        return this.prisma.$transaction(async tx => {
+            const productItems = await this.productsService.removeStock(
+                data.items.map(item => ({
+                    id: item.product_id,
+                    quantity: item.quantity,
+                })),
+                tx,
+            )
 
-        for (const item of data.items) {
-            const product = await this.productsRepository.findUnique(item.product_id)
-
-            if (!product) {
-                throw new NotFoundException('Produto não encontrado')
-            }
-
-            if (product.stock < item.quantity) {
-                soldOutProducts.push(product)
-                continue
-            }
-
-            items.push({ product, quantity: item.quantity })
-        }
-
-        // Validar se os produtos estão esgotados
-        if (soldOutProducts.length > 0) {
-            throw new BadRequestException('Produtos esgotados: ' + soldOutProducts.map(product => product.name).join(', '))
-        }
-
-        // Calcular o total da ordem
-        const totalPrice = items.reduce((acc, item) => acc + item.product.unit_price * item.quantity, 0)
-
-        // Criar o pedido
-        const order = await this.ordersRepository.create({
-            customer_id: data.customer_id,
-            delivery_date: data.delivery_date,
-            pickup_date: data.pickup_date,
-            status: "PENDING_DELIVERY",
-            payment_method: data.payment_method,
-            total_price: totalPrice,
-            observations: data.observations,
-            items: items.map(item => ({
-                product_id: item.product.id,
-                quantity: item.quantity,
-                unit_price: item.product.unit_price,
-                subtotal: item.product.unit_price * item.quantity,
-            })),
+            return this.createPendingOrder({
+                order: data,
+                totalPrice: this.calculateTotalPrice(productItems),
+                productItems,
+            }, tx)
         })
+    }
 
-        // Atualizar o estoque dos produtos
-        for (const item of items) {
-            await this.productsRepository.update(item.product.id, {
-                stock: item.product.stock - item.quantity,
-            })
-        }
+    private async createPendingOrder({ order, totalPrice, productItems }: CreatePendingOrderDto, tx: Prisma.TransactionClient) {
+        const pendingOrder = await this.ordersRepository.create({
+            ...order,
+            status: "PENDING_DELIVERY",
+            total_price: totalPrice,
+            items: productItems.map(({ product, quantity }) => {
+                return {
+                    product_id: product.id,
+                    quantity: quantity,
+                    unit_price: product.unit_price,
+                    subtotal: product.unit_price * quantity,
+                }
+            }),
+        }, tx)
 
-        return order
+        return pendingOrder
+    }
 
+    private calculateTotalPrice(products: ProductStockItemDto[]) {
+        return products.reduce((acc, p) => acc + p.product.unit_price * p.quantity, 0)
     }
 }

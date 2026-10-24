@@ -149,8 +149,8 @@ export class OrdersRepository {
         total_price,
         observations,
         items
-    }: CreateOrderInput) {
-        const order = await this.prisma.order.create({
+    }: CreateOrderInput, tx: Prisma.TransactionClient = this.prisma) {
+        const order = await tx.order.create({
             data: {
                 customer_id,
                 delivery_date,
