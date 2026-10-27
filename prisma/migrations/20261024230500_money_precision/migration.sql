@@ -1,0 +1,10 @@
+-- AlterTable
+ALTER TABLE "Order" ALTER COLUMN "total_price" SET DATA TYPE DECIMAL(10,2);
+
+-- AlterTable
+ALTER TABLE "OrderItem" ALTER COLUMN "unit_price" SET DATA TYPE DECIMAL(10,2),
+ALTER COLUMN "subtotal" SET DATA TYPE DECIMAL(10,2);
+
+-- AlterTable
+ALTER TABLE "Product" ALTER COLUMN "unit_price" SET DATA TYPE DECIMAL(10,2),
+ALTER COLUMN "promocional_price" SET DATA TYPE DECIMAL(10,2);

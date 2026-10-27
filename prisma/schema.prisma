@@ -45,8 +45,8 @@ model Product {
   id                ProductType @id
   name              String      @unique
   stock             Int
-  unit_price        Decimal
-  promocional_price Decimal?
+  unit_price        Decimal     @db.Decimal(10, 2)
+  promocional_price Decimal?    @db.Decimal(10, 2)
   created_at        DateTime    @default(now())
   updated_at        DateTime    @updatedAt
   order_items       OrderItem[]
@@ -87,7 +87,7 @@ model Order {
   delivery_date  DateTime
   pickup_date    DateTime
   status         OrderType
-  total_price    Decimal
+  total_price    Decimal            @db.Decimal(10, 2)
   payment_method OrderPaymentMethod
   observations   String?
   created_at     DateTime           @default(now())
@@ -106,8 +106,8 @@ model OrderItem {
   product_id ProductType
   product    Product     @relation(fields: [product_id], references: [id], onDelete: Restrict)
   quantity   Int
-  unit_price Decimal
-  subtotal   Decimal
+  unit_price Decimal     @db.Decimal(10, 2)
+  subtotal   Decimal     @db.Decimal(10, 2)
   created_at DateTime    @default(now())
   updated_at DateTime    @updatedAt
 

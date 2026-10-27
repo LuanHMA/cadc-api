@@ -12,7 +12,7 @@ export class ProductsRepository {
 
     async findAll() {
         const products = await this.prisma.product.findMany()
-        return products
+        return products.map(this.toEntity)
     }
 
     async findUnique(id: Product['id'], tx: Prisma.TransactionClient = this.prisma): Promise<Product | null> {
@@ -25,6 +25,15 @@ export class ProductsRepository {
         if (!product) {
             return null
         }
+
+        return this.toEntity(product)
+    }
+
+    async setStock(id: Product['id'], stock: number, tx: Prisma.TransactionClient = this.prisma): Promise<Product> {
+        const product = await tx.product.update({
+            where: { id },
+            data: { stock },
+        })
 
         return this.toEntity(product)
     }
@@ -52,17 +61,6 @@ export class ProductsRepository {
         })
 
         return count > 0
-    }
-
-    async incrementStock(id: Product['id'], quantity: number, tx: Prisma.TransactionClient = this.prisma): Promise<void> {
-        await tx.product.update({
-            where: {
-                id,
-            },
-            data: {
-                stock: { increment: quantity },
-            },
-        })
     }
 
     private toEntity(product: ProductRecord): Product {

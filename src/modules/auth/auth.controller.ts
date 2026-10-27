@@ -73,6 +73,8 @@ export class AuthController {
 
     @Get('me')
     async me(@CurrentUser() user: JwtPayload) {
+        console.log(user)
+
         return this.authService.me(user.sub);
     }
 }
