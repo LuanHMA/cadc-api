@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { CreateCustomerDto, UpdateCustomerDto } from "./customers.dto.js";
+import { CreateCustomerDto, FindAllCustomersDto, UpdateCustomerDto } from "./customers.dto.js";
 import { Customer } from "./customers.entities.js";
 import { CustomersRepository } from "./customers.repository.js";
 
@@ -17,9 +17,8 @@ export class CustomersService {
         return customer
     }
 
-    async findAll() {
-        const customers = await this.customersRepository.findAll()
-        return customers
+    async findAll(query: FindAllCustomersDto) {
+        return this.customersRepository.findAll(query)
     }
 
     async create(data: CreateCustomerDto) {

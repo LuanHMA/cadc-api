@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
+import { FindAllCustomersDto } from "./customers.dto.js";
 import { Customer } from "./customers.entities.js";
 
 type CreateCustomerData = Omit<Customer, 'id' | 'created_at' | 'updated_at'>
@@ -29,9 +31,31 @@ export class CustomersRepository {
         return customer
     }
 
-    async findAll() {
-        const customers = await this.prisma.customer.findMany()
-        return customers
+    async findAll({ page, limit, name, phone }: FindAllCustomersDto) {
+        const where: Prisma.CustomerWhereInput = {
+            ...(name ? { name: { contains: name, mode: "insensitive" } } : {}),
+            ...(phone ? { phone: { contains: phone } } : {}),
+        }
+
+        const [customers, total] = await Promise.all([
+            this.prisma.customer.findMany({
+                where,
+                orderBy: { name: "asc" },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            this.prisma.customer.count({ where }),
+        ])
+
+        return {
+            customers,
+            pagination: {
+                page,
+                limit,
+                total,
+                total_pages: Math.ceil(total / limit),
+            },
+        }
     }
 
     async create(data: CreateCustomerData) {
