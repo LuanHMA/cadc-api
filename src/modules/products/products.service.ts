@@ -51,7 +51,6 @@ export class ProductsService {
 
     async updateStock(data: StockBodyDto) {
         const components: UpdateKitStockDto[] = [data.tables, data.chairs]
-        const kitStock = this.updateKitStock(components)
 
         return this.prisma.$transaction(async (tx) => {
             const updatedProducts = []
@@ -60,7 +59,7 @@ export class ProductsService {
                 updatedProducts.push(await this.productsRepository.setStock(id, quantity, tx))
             }
 
-            updatedProducts.push(await this.productsRepository.setStock("KIT", kitStock, tx))
+            updatedProducts.push(await this.refreshKitStock(tx))
 
             return updatedProducts
         })
@@ -71,7 +70,8 @@ export class ProductsService {
             return this.prisma.$transaction(tx => this.removeStock(items, tx))
         }
 
-        for (const { id, quantity } of this.toStockMovements(items)) {
+        // Remove o estoque de todos os produtos - Utilize o método expandKitToComponents para identificar quantas mesas e cadeiras devem ser removidas caso seja um KIT
+        for (const { id, quantity } of this.expandKitToComponents(items)) {
             const removed = await this.productsRepository.decrementStock(id, quantity, tx)
 
             if (!removed) {
@@ -79,6 +79,8 @@ export class ProductsService {
                 throw new BadRequestException(`Estoque insuficiente para o produto ${product?.name ?? id}`)
             }
         }
+
+        await this.refreshKitStock(tx)
 
         const removedItems: ProductStockItemDto[] = []
 
@@ -95,18 +97,38 @@ export class ProductsService {
         return removedItems
     }
 
-    // Se for um KIT, converte o kit para o numero de mesas e cadeiras que o compõem
-    private toStockMovements(items: StockMovementDto[]): StockMovementDto[] {
+    // Atualiza o estoque do KIT com base no estoque das mesas e cadeiras
+    private async refreshKitStock(tx: Prisma.TransactionClient) {
+        const [tables, chairs] = await Promise.all([
+            this.productsRepository.findUnique("TABLE", tx),
+            this.productsRepository.findUnique("CHAIR", tx),
+        ])
+
+        if (!tables || !chairs) {
+            throw new NotFoundException('Produto não encontrado')
+        }
+
+        const kitStock = this.countCompleteKits([
+            { id: "TABLE", quantity: tables.stock },
+            { id: "CHAIR", quantity: chairs.stock },
+        ])
+
+        return this.productsRepository.setStock("KIT", kitStock, tx)
+    }
+
+    // Se for um KIT, converte o kit para o numero de mesas e cadeiras que o compõem, se não retorna os itens originais
+    private expandKitToComponents(items: StockMovementDto[]): StockMovementDto[] {
         return items.flatMap(({ id, quantity }) => {
             if (id === "KIT") {
                 return KIT_COMPOSITION.map(component => ({ id: component.id, quantity: component.quantity * quantity }))
             }
+
             return [{ id, quantity }]
         })
     }
 
-    // 1 kit = 1 mesa + 4 cadeiras. O estoque do kit é o menor número de kits completos.
-    private updateKitStock(products: UpdateKitStockDto[]) {
+    // Calcula o número de kits completos que podem ser formados com os produtos disponíveis
+    private countCompleteKits(products: UpdateKitStockDto[]) {
         const stockById = new Map(products.map(({ id, quantity }) => [id, quantity]))
 
         return Math.min(

@@ -39,7 +39,7 @@ export class OrderService {
             const productItems = await this.productsService.removeStock(
                 data.items.map(item => ({
                     id: item.product_id,
-                    quantity: item.quantity,
+                    quantity: item.qtd,
                 })),
                 tx,
             )

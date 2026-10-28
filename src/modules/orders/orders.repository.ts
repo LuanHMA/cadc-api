@@ -87,24 +87,26 @@ export class OrdersRepository {
                     select: {
                         id: true,
                         name: true,
+                        address: true,
+                        phone: true,
+                        district: true,
                     }
                 },
-                items: {
-                    select: {
-                        id: true,
-                        product_id: true,
-                        quantity: true,
-                        product: {
-                            select: {
-                                name: true,
-                            },
-                        },
-                    }
-                }
             }
         })
 
-        return orders
+        return {
+            orders: orders.map(order => ({
+                ...order,
+                total_price: order.total_price.toNumber(),
+
+            })),
+            pagination: {
+                total: orders.length,
+                page,
+                limit,
+            }
+        }
     }
 
     async findOne(id: Order['id']) {
