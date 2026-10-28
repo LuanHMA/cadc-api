@@ -4,6 +4,11 @@ import { ProductStockItemDto } from "../products/products.dto.js";
 const dateFromInput = (message: string) =>
     z.iso.date(message).transform((value) => new Date(`${value}T00:00:00.000Z`));
 
+// ORDER ID DTO
+export const OrderIdSchema = z.string("ID do pedido inválido").uuid("ID do pedido inválido");
+
+export type OrderIdDto = z.infer<typeof OrderIdSchema>;
+
 // FIND ALL ORDERS DTO
 const OrderTypeSchema = z.enum(["PENDING_DELIVERY", "DELIVERED", "PENDING_PICKUP", "COMPLETED", "CANCELLED"]);
 

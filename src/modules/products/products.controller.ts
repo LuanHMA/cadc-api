@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Put } from "@nestjs/common";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
-import { type FindUniqueProductParamsDto, FindUniqueProductParamsSchema, type StockBodyDto, StockBodySchema } from "./products.dto.js";
+import { type ProductIdDto, ProductIdSchema, type StockBodyDto, StockBodySchema } from "./products.dto.js";
 import { ProductsService } from "./products.service.js";
 
 @Controller('products')
@@ -14,7 +14,7 @@ export class ProductsController {
     }
 
     @Get(':id')
-    async findUnique(@Param('id', new ZodValidationPipe(FindUniqueProductParamsSchema)) productId: FindUniqueProductParamsDto) {
+    async findUnique(@Param('id', new ZodValidationPipe(ProductIdSchema)) productId: ProductIdDto) {
         const product = await this.productsService.findUnique(productId)
         return { message: 'Produto encontrado com sucesso', product }
     }

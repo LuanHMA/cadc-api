@@ -12,9 +12,9 @@ export const UpdateProductBodySchema = z.object({
 export type UpdateProductDto = z.infer<typeof UpdateProductBodySchema>;
 
 // FIND UNIQUE PRODUCT PARAMS DTO
-export const FindUniqueProductParamsSchema = z.enum(["TABLE", "CHAIR", "KIT"])
+export const ProductIdSchema = z.enum(["TABLE", "CHAIR", "KIT"])
 
-export type FindUniqueProductParamsDto = z.infer<typeof FindUniqueProductParamsSchema>;
+export type ProductIdDto = z.infer<typeof ProductIdSchema>;
 
 // STOCK BODY DTO
 export const StockBodySchema = z.object({

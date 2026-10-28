@@ -140,7 +140,15 @@ export class OrdersRepository {
             }
         })
 
-        return order
+        return {
+            ...order,
+            total_price: order?.total_price.toNumber(),
+            items: order?.items.map(item => ({
+                ...item,
+                subtotal: item.subtotal.toNumber(),
+                unit_price: item.unit_price.toNumber(),
+            })),
+        }
     }
 
     async create({
