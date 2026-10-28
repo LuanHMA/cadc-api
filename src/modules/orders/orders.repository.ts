@@ -33,6 +33,7 @@ interface UpdateOrderInput {
     payment_method?: OrderPaymentMethod,
     total_price?: number,
     observations?: string,
+    items?: CreateOrderItemInput[],
 }
 
 interface CreateOrderItemInput {
@@ -140,10 +141,14 @@ export class OrdersRepository {
             }
         })
 
+        if (!order) {
+            return null
+        }
+
         return {
             ...order,
-            total_price: order?.total_price.toNumber(),
-            items: order?.items.map(item => ({
+            total_price: order.total_price.toNumber(),
+            items: order.items.map(item => ({
                 ...item,
                 subtotal: item.subtotal.toNumber(),
                 unit_price: item.unit_price.toNumber(),
@@ -192,8 +197,9 @@ export class OrdersRepository {
         payment_method,
         total_price,
         observations,
-    }: UpdateOrderInput) {
-        const order = await this.prisma.order.update({
+        items,
+    }: UpdateOrderInput, tx: Prisma.TransactionClient = this.prisma) {
+        const order = await tx.order.update({
             where: {
                 id,
             },
@@ -204,7 +210,18 @@ export class OrdersRepository {
                 status,
                 payment_method,
                 total_price,
-                observations: observations ?? null,
+                observations,
+                ...(items ? {
+                    items: {
+                        deleteMany: {},
+                        create: items.map((item) => ({
+                            product_id: item.product_id,
+                            quantity: item.quantity,
+                            unit_price: item.unit_price,
+                            subtotal: item.subtotal,
+                        })),
+                    },
+                } : {}),
             },
         })
 

@@ -97,6 +97,18 @@ export class ProductsService {
         return removedItems
     }
 
+    async addStock(items: StockMovementDto[], tx?: Prisma.TransactionClient): Promise<void> {
+        if (!tx) {
+            return this.prisma.$transaction(tx => this.addStock(items, tx))
+        }
+
+        for (const { id, quantity } of this.expandKitToComponents(items)) {
+            await this.productsRepository.incrementStock(id, quantity, tx)
+        }
+
+        await this.refreshKitStock(tx)
+    }
+
     // Atualiza o estoque do KIT com base no estoque das mesas e cadeiras
     private async refreshKitStock(tx: Prisma.TransactionClient) {
         const [tables, chairs] = await Promise.all([

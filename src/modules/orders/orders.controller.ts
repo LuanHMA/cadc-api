@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query } from "@nestjs/common";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
-import { CreateOrderBodySchema, OrderIdSchema, type CreateOrderDto, type FindAllOrdersDto, type OrderIdDto } from "./orders.dto.js";
+import { CreateOrderBodySchema, OrderIdSchema, UpdateOrderBodySchema, type CreateOrderDto, type FindAllOrdersDto, type OrderIdDto, type UpdateOrderDto } from "./orders.dto.js";
 import { OrderService } from "./orders.service.js";
 
 @Controller('orders')
@@ -23,5 +23,14 @@ export class OrdersController {
     async create(@Body(new ZodValidationPipe(CreateOrderBodySchema)) body: CreateOrderDto) {
         const order = await this.orderService.create(body)
         return { message: 'Pedido criado com sucesso', order }
+    }
+
+    @Put(':id')
+    async update(
+        @Param('id', new ZodValidationPipe(OrderIdSchema)) id: OrderIdDto,
+        @Body(new ZodValidationPipe(UpdateOrderBodySchema)) body: UpdateOrderDto
+    ) {
+        const order = await this.orderService.updateOne(id, body)
+        return { message: 'Pedido atualizado com sucesso', order }
     }
 }
