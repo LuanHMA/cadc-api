@@ -1,25 +1,42 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from "@nestjs/common";
+import { ApiConflictResponse, ApiNotFoundResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
+import { CustomerItemResponseSchema, CustomerListResponseSchema, MessageResponseSchema } from "../../swagger/response.schemas.js";
+import { ApiProtected, ApiZodBody, ApiZodCreatedResponse, ApiZodOkResponse, ApiZodParam, ApiZodQuery } from "../../swagger/zod-openapi.js";
 import { CreateCustomerBodySchema, CustomerIdSchema, FindAllCustomersQuerySchema, UpdateCustomerBodySchema, type CreateCustomerDto, type CustomerIdDto, type FindAllCustomersDto, type UpdateCustomerDto } from "./customers.dto.js";
 import { CustomersService } from "./customers.service.js";
 
+@ApiTags('Clientes')
+@ApiProtected()
 @Controller('customers')
 export class CustomersController {
     constructor(private readonly customersService: CustomersService) { }
 
     @Get()
+    @ApiOperation({ summary: 'Listar clientes' })
+    @ApiZodQuery(FindAllCustomersQuerySchema)
+    @ApiZodOkResponse(CustomerListResponseSchema, 'Clientes encontrados.')
     async findAll(@Query(new ZodValidationPipe(FindAllCustomersQuerySchema)) query: FindAllCustomersDto) {
         const { customers, pagination } = await this.customersService.findAll(query)
         return { message: 'Clientes encontrados com sucesso', customers, pagination }
     }
 
     @Post()
+    @ApiOperation({ summary: 'Criar cliente' })
+    @ApiZodBody(CreateCustomerBodySchema)
+    @ApiZodCreatedResponse(CustomerItemResponseSchema, 'Cliente criado.')
+    @ApiConflictResponse({ description: 'Já existe um cliente com este telefone' })
     async create(@Body(new ZodValidationPipe(CreateCustomerBodySchema)) body: CreateCustomerDto) {
         const customer = await this.customersService.create(body)
         return { message: 'Cliente criado com sucesso', customer }
     }
 
     @Put(':id')
+    @ApiOperation({ summary: 'Atualizar cliente' })
+    @ApiZodParam('id', CustomerIdSchema.shape.id)
+    @ApiZodBody(UpdateCustomerBodySchema)
+    @ApiZodOkResponse(CustomerItemResponseSchema, 'Cliente atualizado.')
+    @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
     async update(
         @Param(new ZodValidationPipe(CustomerIdSchema)) params: CustomerIdDto,
         @Body(new ZodValidationPipe(UpdateCustomerBodySchema)) body: UpdateCustomerDto
@@ -29,6 +46,10 @@ export class CustomersController {
     }
 
     @Delete(':id')
+    @ApiOperation({ summary: 'Remover cliente' })
+    @ApiZodParam('id', CustomerIdSchema.shape.id)
+    @ApiZodOkResponse(MessageResponseSchema, 'Cliente removido.')
+    @ApiNotFoundResponse({ description: 'Cliente não encontrado' })
     async delete(@Param(new ZodValidationPipe(CustomerIdSchema)) params: CustomerIdDto) {
         const customer = await this.customersService.delete(params.id)
         return { message: `${customer.name} deletado com sucesso` }

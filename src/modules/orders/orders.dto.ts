@@ -1,5 +1,5 @@
 import z from "zod";
-import { ProductStockItemDto } from "../products/products.dto.js";
+import { ProductIdSchema, type ProductStockItemDto } from "../products/products.dto.js";
 
 const dateFromInput = (message: string) =>
     z.iso.date(message).transform((value) => new Date(`${value}T00:00:00.000Z`));
@@ -10,12 +10,24 @@ export const OrderIdSchema = z.string("ID do pedido inválido").uuid("ID do pedi
 export type OrderIdDto = z.infer<typeof OrderIdSchema>;
 
 // FIND ALL ORDERS DTO
-const OrderTypeSchema = z.enum(["PENDING_DELIVERY", "DELIVERED", "PENDING_PICKUP", "COMPLETED", "CANCELLED"]);
+export const OrderTypeSchema = z.enum([
+    "PENDING_DELIVERY",
+    "DELIVERED",
+    "PENDING_PICKUP",
+    "COMPLETED",
+    "CANCELLED",
+]).describe(
+    "Status do pedido: PENDING_DELIVERY (aguardando entrega), DELIVERED (entregue), PENDING_PICKUP (aguardando retirada), COMPLETED (concluído), CANCELLED (cancelado)",
+);
+
+export const SortOrderSchema = z.enum(["asc", "desc"]).describe(
+    "Ordenação pela data de criação: asc (crescente) ou desc (decrescente)",
+);
 
 export const FindAllOrdersQuerySchema = z.object({
     page: z.number("Página inválida").min(1, "Página inválida").optional(),
     limit: z.number("Limite inválido").min(1, "Limite inválido").max(100, "Limite inválido").optional(),
-    sort: z.enum(["asc", "desc"]).optional(),
+    sort: SortOrderSchema.optional(),
     search: z.string("Busca inválida").optional(),
     delivery_date: dateFromInput("Data de entrega inválida").optional(),
     pickup_date: dateFromInput("Data de retirada inválida").optional(),
@@ -25,10 +37,18 @@ export const FindAllOrdersQuerySchema = z.object({
 export type FindAllOrdersDto = z.infer<typeof FindAllOrdersQuerySchema>;
 
 // CREATE ORDER DTO
-const OrderPaymentMethodSchema = z.enum(["CASH", "CREDIT_CARD", "DEBIT_CARD", "PIX", "OTHER"]);
+export const OrderPaymentMethodSchema = z.enum([
+    "CASH",
+    "CREDIT_CARD",
+    "DEBIT_CARD",
+    "PIX",
+    "OTHER",
+]).describe(
+    "Forma de pagamento: CASH (dinheiro), CREDIT_CARD (cartão de crédito), DEBIT_CARD (cartão de débito), PIX, OTHER (outro)",
+);
 
 const OrderItemBodySchema = z.object({
-    product_id: z.enum(["TABLE", "CHAIR", "KIT"], "Produto inválido"),
+    product_id: ProductIdSchema,
     qtd: z.number("Quantidade inválida").int("Quantidade inválida").min(1, "Quantidade inválida"),
 });
 
