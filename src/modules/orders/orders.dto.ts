@@ -25,8 +25,8 @@ export const SortOrderSchema = z.enum(["asc", "desc"]).describe(
 );
 
 export const FindAllOrdersQuerySchema = z.object({
-    page: z.number("Página inválida").min(1, "Página inválida").optional(),
-    limit: z.number("Limite inválido").min(1, "Limite inválido").max(100, "Limite inválido").optional(),
+    page: z.coerce.number("Página inválida").int("Página inválida").min(1, "Página inválida").optional(),
+    limit: z.coerce.number("Limite inválido").int("Limite inválido").min(1, "Limite inválido").max(100, "Limite inválido").optional(),
     sort: SortOrderSchema.optional(),
     search: z.string("Busca inválida").optional(),
     delivery_date: dateFromInput("Data de entrega inválida").optional(),

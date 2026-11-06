@@ -5,6 +5,8 @@ import { PrismaModule } from './database/prisma.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { CustomersModule } from './modules/customers/customers.module.js';
+import { ProductsModule } from './modules/products/products.module.js';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { UsersModule } from './modules/users/users.module.js';
     UsersModule,
     AuthModule,
     OrdersModule,
+    CustomersModule,
+    ProductsModule,
   ],
   controllers: [],
   providers: [],

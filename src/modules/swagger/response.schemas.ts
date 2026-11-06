@@ -1,6 +1,6 @@
 import z from "zod";
-import { OrderPaymentMethodSchema, OrderTypeSchema } from "../modules/orders/orders.dto.js";
-import { ProductIdSchema } from "../modules/products/products.dto.js";
+import { OrderPaymentMethodSchema, OrderTypeSchema } from "../orders/orders.dto.js";
+import { ProductIdSchema } from "../products/products.dto.js";
 
 const dateTime = z.iso.datetime();
 const message = z.string();

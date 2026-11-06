@@ -3,7 +3,6 @@ import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import {
     ProductStockItemDto,
-    StockBodyDto,
     StockMovementDto,
     UpdateKitStockDto,
     UpdateProductDto,
@@ -39,17 +38,12 @@ export class ProductsService {
     }
 
     async update(id: Product['id'], data: UpdateProductDto) {
-        const productExists = await this.productsRepository.findUnique(id)
-
-        if (!productExists) {
-            throw new NotFoundException('Produto não encontrado')
+        // O estoque do KIT é sempre derivado das mesas e cadeiras (ver refreshKitStock)
+        if (id === "KIT" && data.stock !== undefined) {
+            throw new BadRequestException('O estoque do KIT é calculado a partir das mesas e cadeiras')
         }
 
         return this.prisma.$transaction(async (tx) => {
-            if (id === "KIT" && data.stock !== undefined) {
-                await this.ensureKitStockAvailable(data.stock, tx)
-            }
-
             const { stock, ...prices } = data
             let product = await this.productsRepository.findUnique(id, tx)
 
@@ -58,7 +52,7 @@ export class ProductsService {
             }
 
             if (stock !== undefined) {
-                product = await this.applyTotalStock(id, stock, tx)
+                product = await this.applyTotalStock(product, stock, tx)
             }
 
             if (Object.keys(prices).length > 0) {
@@ -74,22 +68,7 @@ export class ProductsService {
         })
     }
 
-    async updateStock(data: StockBodyDto) {
-        const components: UpdateKitStockDto[] = [data.tables, data.chairs]
-
-        return this.prisma.$transaction(async (tx) => {
-            const updatedProducts = []
-
-            for (const { id, quantity } of components) {
-                updatedProducts.push(await this.applyTotalStock(id, quantity, tx))
-            }
-
-            updatedProducts.push(await this.refreshKitStock(tx))
-
-            return updatedProducts
-        })
-    }
-
+    // Recebe os items no formato (product_id e quantity), converet kit para mesas e cadeiras, remove os items do estoque disponivel e retorna um array com os produtos removidos (informação do produto e quantidade)
     async removeStock(items: StockMovementDto[], tx?: Prisma.TransactionClient): Promise<ProductStockItemDto[]> {
         if (!tx) {
             return this.prisma.$transaction(tx => this.removeStock(items, tx))
@@ -107,7 +86,12 @@ export class ProductsService {
 
         await this.refreshKitStock(tx)
 
-        const removedItems: ProductStockItemDto[] = []
+        return this.loadStockItems(items, tx)
+    }
+
+    // Carrega os produtos dos itens (com preço atual) sem movimentar o estoque
+    async loadStockItems(items: StockMovementDto[], tx?: Prisma.TransactionClient): Promise<ProductStockItemDto[]> {
+        const stockItems: ProductStockItemDto[] = []
 
         for (const { id, quantity } of items) {
             const product = await this.productsRepository.findUnique(id, tx)
@@ -116,10 +100,10 @@ export class ProductsService {
                 throw new NotFoundException('Produto não encontrado')
             }
 
-            removedItems.push({ product, quantity })
+            stockItems.push({ product, quantity })
         }
 
-        return removedItems
+        return stockItems
     }
 
     async addStock(items: StockMovementDto[], tx?: Prisma.TransactionClient): Promise<void> {
@@ -132,27 +116,6 @@ export class ProductsService {
         }
 
         await this.refreshKitStock(tx)
-    }
-
-    // Garante que a quantidade de kits cabe nas mesas e cadeiras disponíveis (1 mesa e 4 cadeiras por kit)
-    private async ensureKitStockAvailable(kitQuantity: number, tx: Prisma.TransactionClient) {
-        const [tables, chairs] = await Promise.all([
-            this.productsRepository.findUnique("TABLE", tx),
-            this.productsRepository.findUnique("CHAIR", tx),
-        ])
-
-        if (!tables || !chairs) {
-            throw new NotFoundException('Produto não encontrado')
-        }
-
-        const availableKits = this.countCompleteKits([
-            { id: "TABLE", quantity: tables.stock },
-            { id: "CHAIR", quantity: chairs.stock },
-        ])
-
-        if (kitQuantity > availableKits) {
-            throw new BadRequestException('Não há mesas ou cadeiras suficientes no estoque')
-        }
     }
 
     // Atualiza o estoque do KIT com base no estoque das mesas e cadeiras
@@ -182,20 +145,14 @@ export class ProductsService {
         }, tx)
     }
 
-    private async applyTotalStock(id: Product['id'], stock: number, tx: Prisma.TransactionClient) {
-        const current = await this.productsRepository.findUnique(id, tx)
-
-        if (!current) {
-            throw new NotFoundException('Produto não encontrado')
-        }
-
+    private async applyTotalStock(current: Product, stock: number, tx: Prisma.TransactionClient) {
         const rented = current.stock - current.disponible_stock
 
         if (stock < rented) {
             throw new BadRequestException('O estoque total não pode ser menor que a quantidade alugada')
         }
 
-        return this.productsRepository.setQuantities(id, {
+        return this.productsRepository.setQuantities(current.id, {
             stock,
             disponible_stock: stock - rented,
         }, tx)

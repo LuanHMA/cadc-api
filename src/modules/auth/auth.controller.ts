@@ -1,9 +1,8 @@
- import { BadRequestException, Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { BadRequestException, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
-import { AuthSessionResponseSchema, MessageResponseSchema, PublicUserSchema } from '../../swagger/response.schemas.js';
-import { ApiProtected, ApiZodBody, ApiZodCreatedResponse, ApiZodOkResponse } from '../../swagger/zod-openapi.js';
+import { AuthSessionResponseSchema, MessageResponseSchema, PublicUserSchema } from '../swagger/response.schemas.js';
+import { ApiDoc, ZodBody } from '../swagger/zod-openapi.js';
 import { AuthCookies } from './auth.cookies.js';
 import { LoginDtoSchema, registerDtoSchema, type LoginDto, type RegisterDto } from './auth.dtos.js';
 import { AuthService } from './auth.service.js';
@@ -22,11 +21,12 @@ export class AuthController {
     @Public()
     @Post('register')
     @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Registrar usuário' })
-    @ApiZodBody(registerDtoSchema)
-    @ApiZodCreatedResponse(AuthSessionResponseSchema, 'Usuário registrado. Os tokens são gravados em cookies httpOnly.')
+    @ApiDoc({
+        summary: 'Registrar usuário',
+        created: [AuthSessionResponseSchema, 'Usuário registrado. Os tokens são gravados em cookies httpOnly.'],
+    })
     async register(
-        @Body(new ZodValidationPipe(registerDtoSchema)) body: RegisterDto,
+        @ZodBody(registerDtoSchema) body: RegisterDto,
         @Res({ passthrough: true }) res: Response,
     ) {
         const { user, tokens } = await this.authService.register(body);
@@ -39,12 +39,13 @@ export class AuthController {
     @Public()
     @Post('login')
     @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Entrar' })
-    @ApiZodBody(LoginDtoSchema)
-    @ApiZodOkResponse(AuthSessionResponseSchema, 'Login realizado. Os tokens são gravados em cookies httpOnly.')
-    @ApiUnauthorizedResponse({ description: 'Credenciais inválidas' })
+    @ApiDoc({
+        summary: 'Entrar',
+        ok: [AuthSessionResponseSchema, 'Login realizado. Os tokens são gravados em cookies httpOnly.'],
+        unauthorized: 'Credenciais inválidas',
+    })
     async login(
-        @Body(new ZodValidationPipe(LoginDtoSchema)) body: LoginDto,
+        @ZodBody(LoginDtoSchema) body: LoginDto,
         @Res({ passthrough: true }) res: Response,
     ) {
         const { user, tokens } = await this.authService.login(body);
@@ -57,10 +58,13 @@ export class AuthController {
     @Public()
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
-    @ApiCookieAuth('refresh_token')
-    @ApiOperation({ summary: 'Renovar access token', description: 'Lê o cookie httpOnly refresh_token. Não possui body.' })
-    @ApiZodOkResponse(MessageResponseSchema, 'Tokens renovados e gravados nos cookies.')
-    @ApiUnauthorizedResponse({ description: 'Refresh token ausente, inválido ou expirado' })
+    @ApiDoc({
+        summary: 'Renovar access token',
+        description: 'Lê o cookie httpOnly refresh_token. Não possui body.',
+        cookieAuth: 'refresh_token',
+        ok: [MessageResponseSchema, 'Tokens renovados e gravados nos cookies.'],
+        unauthorized: 'Refresh token ausente, inválido ou expirado',
+    })
     async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
         const refreshToken = this.authCookies.getRefreshToken(req);
 
@@ -70,7 +74,7 @@ export class AuthController {
             const tokens = await this.authService.refresh(refreshToken);
             this.authCookies.setTokens(res, tokens);
             return { message: 'Refresh token atualizado com sucesso' };
-        } catch (error) {
+        } catch {
             this.authCookies.clear(res);
             throw new BadRequestException('Refresh token inválido ou expirado');
         }
@@ -78,9 +82,11 @@ export class AuthController {
 
     @Post('logout')
     @HttpCode(HttpStatus.OK)
-    @ApiProtected()
-    @ApiOperation({ summary: 'Encerrar sessão' })
-    @ApiZodOkResponse(MessageResponseSchema, 'Logout realizado e cookies limpos.')
+    @ApiDoc({
+        summary: 'Encerrar sessão',
+        ok: [MessageResponseSchema, 'Logout realizado e cookies limpos.'],
+        protected: true,
+    })
     async logout(@CurrentUser() user: JwtPayload, @Res({ passthrough: true }) res: Response) {
         await this.authService.logout(user.sid);
 
@@ -90,9 +96,11 @@ export class AuthController {
     }
 
     @Get('me')
-    @ApiProtected()
-    @ApiOperation({ summary: 'Usuário autenticado' })
-    @ApiZodOkResponse(PublicUserSchema, 'Dados públicos do usuário autenticado.')
+    @ApiDoc({
+        summary: 'Usuário autenticado',
+        ok: PublicUserSchema,
+        protected: true,
+    })
     async me(@CurrentUser() user: JwtPayload) {
         return this.authService.me(user.sub);
     }

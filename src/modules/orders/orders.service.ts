@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import { CustomersService } from "../customers/customers.service.js";
-import { ProductStockItemDto } from "../products/products.dto.js";
+import { ProductStockItemDto, StockMovementDto } from "../products/products.dto.js";
 import { ProductsService } from "../products/products.service.js";
 import { CreateOrderDto, CreatePendingOrderDto, FindAllOrdersDto, UpdateOrderDto } from "./orders.dto.js";
 import { Order } from "./orders.entities.js";
@@ -33,16 +33,10 @@ export class OrderService {
     }
 
     async create(data: CreateOrderDto) {
-        await this.customersService.findUnique(data.customer_id)
+        await this.customersService.findUnique(data.customer_id) // Verifica se o cliente existe
 
         return this.prisma.$transaction(async tx => {
-            const productItems = await this.productsService.removeStock(
-                data.items.map(item => ({
-                    id: item.product_id,
-                    quantity: item.qtd,
-                })),
-                tx,
-            )
+            const productItems = await this.productsService.removeStock(this.toStockMovements(data.items), tx)
 
             return this.createPendingOrder({
                 order: data,
@@ -51,7 +45,6 @@ export class OrderService {
             }, tx)
         })
     }
-
 
     async updateOne(id: Order['id'], data: UpdateOrderDto) {
         const order = await this.ordersRepository.findOne(id)
@@ -67,35 +60,23 @@ export class OrderService {
         const nextStatus = data.status ?? order.status
         const holdsStock = this.reservesStock(order.status)
         const willHoldStock = this.reservesStock(nextStatus)
+        const itemsChanged = data.items !== undefined
 
-        const productItems = data.items
-            ? await this.loadProductItems(data.items)
-            : undefined
+        const currentItems = order.items.map(item => ({ id: item.product_id, quantity: item.quantity }))
+        const nextItems = data.items ? this.toStockMovements(data.items) : currentItems
 
         await this.prisma.$transaction(async tx => {
-            if (holdsStock && (productItems || !willHoldStock)) {
-                await this.productsService.addStock(
-                    order.items.map(item => ({
-                        id: item.product_id,
-                        quantity: item.quantity,
-                    })),
-                    tx,
-                )
+            if (holdsStock && (itemsChanged || !willHoldStock)) {
+                await this.productsService.addStock(currentItems, tx)
             }
 
-            if (willHoldStock && (productItems || !holdsStock)) {
-                const nextItems = data.items ?? order.items.map(item => ({
-                    product_id: item.product_id,
-                    qtd: item.quantity,
-                }))
+            let productItems: ProductStockItemDto[] | undefined
 
-                await this.productsService.removeStock(
-                    nextItems.map(item => ({
-                        id: item.product_id,
-                        quantity: item.qtd,
-                    })),
-                    tx,
-                )
+            if (willHoldStock && (itemsChanged || !holdsStock)) {
+                const reservedItems = await this.productsService.removeStock(nextItems, tx)
+                productItems = itemsChanged ? reservedItems : undefined
+            } else if (itemsChanged) {
+                productItems = await this.productsService.loadStockItems(nextItems, tx)
             }
 
             await this.ordersRepository.update(id, {
@@ -106,12 +87,7 @@ export class OrderService {
                 payment_method: data.payment_method,
                 observations: data.observations,
                 total_price: productItems ? this.calculateTotalPrice(productItems) : undefined,
-                items: productItems?.map(({ product, quantity }) => ({
-                    product_id: product.id,
-                    quantity,
-                    unit_price: product.unit_price,
-                    subtotal: product.unit_price * quantity,
-                })),
+                items: productItems ? this.toOrderItems(productItems) : undefined,
             }, tx)
         })
 
@@ -122,15 +98,17 @@ export class OrderService {
         return status !== "CANCELLED" && status !== "COMPLETED"
     }
 
-    private async loadProductItems(items: UpdateOrderDto['items']) {
-        const productItems: ProductStockItemDto[] = []
+    private toStockMovements(items: CreateOrderDto['items']): StockMovementDto[] {
+        return items.map(item => ({ id: item.product_id, quantity: item.qtd }))
+    }
 
-        for (const item of items ?? []) {
-            const product = await this.productsService.findUnique(item.product_id)
-            productItems.push({ product, quantity: item.qtd })
-        }
-
-        return productItems
+    private toOrderItems(productItems: ProductStockItemDto[]) {
+        return productItems.map(({ product, quantity }) => ({
+            product_id: product.id,
+            quantity,
+            unit_price: product.unit_price,
+            subtotal: product.unit_price * quantity,
+        }))
     }
 
     private async createPendingOrder({ order, totalPrice, productItems }: CreatePendingOrderDto, tx: Prisma.TransactionClient) {
@@ -138,14 +116,7 @@ export class OrderService {
             ...order,
             status: "PENDING_DELIVERY",
             total_price: totalPrice,
-            items: productItems.map(({ product, quantity }) => {
-                return {
-                    product_id: product.id,
-                    quantity: quantity,
-                    unit_price: product.unit_price,
-                    subtotal: product.unit_price * quantity,
-                }
-            }),
+            items: this.toOrderItems(productItems),
         }, tx)
 
         return pendingOrder
