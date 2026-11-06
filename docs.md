@@ -46,9 +46,10 @@ CREATE TABLE clientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome VARCHAR(150) NOT NULL,
     telefone VARCHAR(20) NOT NULL,
-    endereco TEXT NOT NULL,
-    bairro VARCHAR(100),
-    ponto_referencia TEXT,
+    rua VARCHAR(255) NOT NULL,
+    numero VARCHAR(20) NOT NULL,
+    complemento TEXT,
+    bairro VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

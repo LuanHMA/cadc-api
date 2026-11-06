@@ -45,6 +45,7 @@ model Product {
   id                ProductType @id
   name              String      @unique
   stock             Int
+  disponible_stock  Int
   unit_price        Decimal     @db.Decimal(10, 2)
   promocional_price Decimal?    @db.Decimal(10, 2)
   created_at        DateTime    @default(now())
@@ -56,9 +57,10 @@ model Customer {
   id              String   @id @default(uuid())
   name            String
   phone           String   @unique
-  address         String
+  street          String
+  house_number    String
+  complement      String?
   district        String
-  reference_point String?
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
   orders          Order[]

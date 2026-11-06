@@ -3,7 +3,7 @@ import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import { Product } from "./products.entities.js";
 
-type UpdateProductData = Partial<Omit<Product, 'id' | 'created_at' | 'updated_at'>>
+type UpdateProductData = Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'name'>>
 type ProductRecord = Prisma.ProductGetPayload<{}>
 
 @Injectable()
@@ -11,7 +11,11 @@ export class ProductsRepository {
     constructor(private readonly prisma: PrismaService) { }
 
     async findAll() {
-        const products = await this.prisma.product.findMany()
+        const products = await this.prisma.product.findMany({
+            orderBy: {
+                name: 'asc'
+            }
+        })
         return products.map(this.toEntity)
     }
 
@@ -29,17 +33,21 @@ export class ProductsRepository {
         return this.toEntity(product)
     }
 
-    async setStock(id: Product['id'], stock: number, tx: Prisma.TransactionClient = this.prisma): Promise<Product> {
+    async setQuantities(
+        id: Product['id'],
+        quantities: Pick<Product, 'stock' | 'disponible_stock'>,
+        tx: Prisma.TransactionClient = this.prisma,
+    ): Promise<Product> {
         const product = await tx.product.update({
             where: { id },
-            data: { stock },
+            data: quantities,
         })
 
         return this.toEntity(product)
     }
 
-    async update(id: Product['id'], data: UpdateProductData): Promise<Product> {
-        const product = await this.prisma.product.update({
+    async update(id: Product['id'], data: UpdateProductData, tx: Prisma.TransactionClient = this.prisma): Promise<Product> {
+        const product = await tx.product.update({
             where: {
                 id,
             },
@@ -49,25 +57,25 @@ export class ProductsRepository {
         return this.toEntity(product)
     }
 
-    async decrementStock(id: Product['id'], quantity: number, tx: Prisma.TransactionClient = this.prisma): Promise<boolean> {
+    async decrementDisponibleStock(id: Product['id'], quantity: number, tx: Prisma.TransactionClient = this.prisma): Promise<boolean> {
         const { count } = await tx.product.updateMany({
             where: {
                 id,
-                stock: { gte: quantity },
+                disponible_stock: { gte: quantity },
             },
             data: {
-                stock: { decrement: quantity },
+                disponible_stock: { decrement: quantity },
             },
         })
 
         return count > 0
     }
 
-    async incrementStock(id: Product['id'], quantity: number, tx: Prisma.TransactionClient = this.prisma): Promise<void> {
+    async incrementDisponibleStock(id: Product['id'], quantity: number, tx: Prisma.TransactionClient = this.prisma): Promise<void> {
         await tx.product.update({
             where: { id },
             data: {
-                stock: { increment: quantity },
+                disponible_stock: { increment: quantity },
             },
         })
     }
@@ -77,6 +85,7 @@ export class ProductsRepository {
             id: product.id,
             name: product.name,
             stock: product.stock,
+            disponible_stock: product.disponible_stock,
             unit_price: product.unit_price.toNumber(),
             promocional_price: product.promocional_price?.toNumber() ?? null,
             created_at: product.created_at,

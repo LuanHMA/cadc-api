@@ -3,7 +3,7 @@ import { ApiBadRequestResponse, ApiNotFoundResponse, ApiOperation, ApiTags } fro
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe.js";
 import { ProductItemResponseSchema, ProductListResponseSchema } from "../../swagger/response.schemas.js";
 import { ApiProtected, ApiZodBody, ApiZodOkResponse, ApiZodParam } from "../../swagger/zod-openapi.js";
-import { type ProductIdDto, ProductIdSchema, type StockBodyDto, StockBodySchema } from "./products.dto.js";
+import { type ProductIdDto, ProductIdSchema, StockBodySchema, UpdateProductBodySchema, type UpdateProductDto } from "./products.dto.js";
 import { ProductsService } from "./products.service.js";
 
 @ApiTags('Produtos')
@@ -30,7 +30,7 @@ export class ProductsController {
         return { message: 'Produto encontrado com sucesso', product }
     }
 
-    @Put('update-stock')
+    @Put(':id')
     @ApiOperation({
         summary: 'Atualizar estoque de mesas e cadeiras',
         description: 'O estoque do KIT é recalculado a partir das mesas e cadeiras (1 mesa e 4 cadeiras por kit).',
@@ -39,10 +39,13 @@ export class ProductsController {
     @ApiZodOkResponse(ProductListResponseSchema, 'Estoque atualizado. A resposta inclui mesas, cadeiras e o kit.')
     @ApiBadRequestResponse({ description: 'Body inválido' })
     @ApiNotFoundResponse({ description: 'Produto não encontrado' })
-    async updateStock(
-        @Body(new ZodValidationPipe(StockBodySchema)) body: StockBodyDto,
+    async update(
+        @Body(new ZodValidationPipe(UpdateProductBodySchema)) body: UpdateProductDto,
+        @Param('id', new ZodValidationPipe(ProductIdSchema)) productId: ProductIdDto,
     ) {
-        const products = await this.productsService.updateStock(body)
+        console.log(productId)
+
+        const products = await this.productsService.update(productId, body)
 
         return { message: 'Estoque atualizado com sucesso', products }
     }

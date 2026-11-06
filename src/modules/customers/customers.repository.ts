@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Prisma } from "../../database/generated/prisma/client.js";
 import { PrismaService } from "../../database/prisma.service.js";
 import { FindAllCustomersDto } from "./customers.dto.js";
-import { Customer } from "./customers.entities.js";
+import { Customer, CustomerDetails } from "./customers.entities.js";
 
 type CreateCustomerData = Omit<Customer, 'id' | 'created_at' | 'updated_at'>
 type UpdateCustomerData = Partial<CreateCustomerData>
@@ -18,7 +18,48 @@ export class CustomersRepository {
             },
         })
 
+        
+
         return customer
+    }
+
+    async findDetails(id: Customer['id']): Promise<CustomerDetails | null> {
+        const customer = await this.prisma.customer.findUnique({
+            where: { id },
+        })
+
+        if (!customer) {
+            return null
+        }
+
+        const [activeOrders, completedOrders, spent] = await Promise.all([
+            this.prisma.order.count({
+                where: {
+                    customer_id: id,
+                    status: { in: ["PENDING_DELIVERY", "DELIVERED", "PENDING_PICKUP"] },
+                },
+            }),
+            this.prisma.order.count({
+                where: {
+                    customer_id: id,
+                    status: "COMPLETED",
+                },
+            }),
+            this.prisma.order.aggregate({
+                where: {
+                    customer_id: id,
+                    status: { not: "CANCELLED" },
+                },
+                _sum: { total_price: true },
+            }),
+        ])
+
+        return {
+            ...customer,
+            active_orders: activeOrders,
+            completed_orders: completedOrders,
+            total_spent: spent._sum.total_price?.toNumber() ?? 0,
+        }
     }
 
     async findByPhone(phone: Customer['phone']) {

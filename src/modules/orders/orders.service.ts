@@ -64,9 +64,9 @@ export class OrderService {
             await this.customersService.findUnique(data.customer_id)
         }
 
-        const nextStatus = data.status ?? order.status // Se o status do pedido for alterado, ele mantém o estoque
-        const holdsStock = order.status !== "CANCELLED" // Se o pedido não foi cancelado, ele mantém o estoque
-        const willHoldStock = nextStatus !== "CANCELLED" // Se o status do pedido for alterado para cancelado, ele libera o estoque
+        const nextStatus = data.status ?? order.status
+        const holdsStock = this.reservesStock(order.status)
+        const willHoldStock = this.reservesStock(nextStatus)
 
         const productItems = data.items
             ? await this.loadProductItems(data.items)
@@ -116,6 +116,10 @@ export class OrderService {
         })
 
         return this.findOne(id)
+    }
+
+    private reservesStock(status: Order['status']) {
+        return status !== "CANCELLED" && status !== "COMPLETED"
     }
 
     private async loadProductItems(items: UpdateOrderDto['items']) {

@@ -8,7 +8,7 @@ const ACCESS_TOKEN_COOKIE = 'access_token';
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 
 const ACCESS_TOKEN_PATH = '/';
-const REFRESH_TOKEN_PATH = '/auth';
+const REFRESH_TOKEN_PATH = '/api/auth';
 
 const MS_PER_SECOND = 1000;
 const MS_PER_DAY = 24 * 60 * 60 * MS_PER_SECOND;

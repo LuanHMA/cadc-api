@@ -94,8 +94,6 @@ export class AuthController {
     @ApiOperation({ summary: 'Usuário autenticado' })
     @ApiZodOkResponse(PublicUserSchema, 'Dados públicos do usuário autenticado.')
     async me(@CurrentUser() user: JwtPayload) {
-        console.log(user)
-
         return this.authService.me(user.sub);
     }
 }

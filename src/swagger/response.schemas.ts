@@ -26,6 +26,7 @@ export const ProductResponseSchema = z.object({
     id: ProductIdSchema,
     name: z.string(),
     stock: z.number().int(),
+    disponible_stock: z.number().int(),
     unit_price: z.number(),
     promocional_price: z.number().nullable(),
     created_at: dateTime,
@@ -46,9 +47,10 @@ export const CustomerResponseSchema = z.object({
     id: z.uuid(),
     name: z.string(),
     phone: z.string(),
-    address: z.string(),
+    street: z.string(),
+    house_number: z.string(),
+    complement: z.string().nullable(),
     district: z.string(),
-    reference_point: z.string().nullable(),
     created_at: dateTime,
     updated_at: dateTime,
 });
@@ -69,11 +71,22 @@ export const CustomerItemResponseSchema = z.object({
     customer: CustomerResponseSchema,
 });
 
+export const CustomerDetailResponseSchema = z.object({
+    message,
+    customer: CustomerResponseSchema.extend({
+        active_orders: z.number().int().describe("Pedidos em andamento: aguardando entrega, entregue ou aguardando retirada"),
+        completed_orders: z.number().int().describe("Pedidos concluídos"),
+        total_spent: z.number().describe("Soma do total dos pedidos que não foram cancelados"),
+    }),
+});
+
 const orderCustomerSummarySchema = z.object({
     id: z.uuid(),
     name: z.string(),
-    address: z.string(),
     phone: z.string(),
+    street: z.string(),
+    house_number: z.string(),
+    complement: z.string().nullable(),
     district: z.string(),
 });
 
@@ -116,10 +129,11 @@ export const OrderDetailSchema = z.object({
     updated_at: dateTime,
     customer: z.object({
         name: z.string(),
-        address: z.string(),
         phone: z.string(),
+        street: z.string(),
+        house_number: z.string(),
+        complement: z.string().nullable(),
         district: z.string(),
-        reference_point: z.string().nullable(),
     }),
     items: z.array(z.object({
         product_id: ProductIdSchema,

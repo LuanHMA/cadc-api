@@ -88,8 +88,10 @@ export class OrdersRepository {
                     select: {
                         id: true,
                         name: true,
-                        address: true,
                         phone: true,
+                        street: true,
+                        house_number: true,
+                        complement: true,
                         district: true,
                     }
                 },
@@ -119,10 +121,11 @@ export class OrdersRepository {
                 customer: {
                     select: {
                         name: true,
-                        address: true,
                         phone: true,
+                        street: true,
+                        house_number: true,
+                        complement: true,
                         district: true,
-                        reference_point: true,
                     }
                 },
                 items: {

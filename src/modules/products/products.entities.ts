@@ -7,6 +7,7 @@ export interface Product {
     id: ProductType
     name: string
     stock: number
+    disponible_stock: number
     unit_price: number
     promocional_price: number | null
     created_at: Date
