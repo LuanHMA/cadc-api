@@ -4,7 +4,7 @@ import type { CookieOptions, Request, Response } from "express";
 import type { Env } from "../../config/env.js";
 import type { AuthTokens } from "./types/auth-tokens.js";
 
-const ACCESS_TOKEN_COOKIE = 'access_token';
+const ACCESS_TOKEN_COOKIE = 'access_toke';
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 
 const ACCESS_TOKEN_PATH = '/';

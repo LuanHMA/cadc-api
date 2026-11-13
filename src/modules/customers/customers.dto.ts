@@ -25,7 +25,7 @@ export const UpdateCustomerBodySchema = z.object({
     street: z.string("Endereço é obrigatório").min(1).max(255),
     district: z.string("Bairro é obrigatório").min(1).max(255),
     house_number: z.string("Número da casa é obrigatório").min(1).max(999),
-    complement: z.string("Complemento é opcional").optional(),
+    complement: z.string("Complemento é opcional").nullable(),
 });
 
 export type UpdateCustomerDto = z.infer<typeof UpdateCustomerBodySchema>;
