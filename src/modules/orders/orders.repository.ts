@@ -93,14 +93,32 @@ export class OrdersRepository {
                         house_number: true,
                         complement: true,
                         district: true,
-                    }
+                    },
                 },
+                items: {
+                    select: {
+                        id: true,
+                        quantity: true,
+                        product: {
+                            select: {
+                                name: true,
+                                id: true
+                            }
+                        }
+                    }
+                }
             }
         })
 
         return {
             orders: orders.map(order => ({
                 ...order,
+                items: order.items.map((item) => (
+                    {
+                        type: item.product.id,
+                        quantity: item.quantity,
+                    }
+                )),
                 total_price: order.total_price.toNumber(),
 
             })),

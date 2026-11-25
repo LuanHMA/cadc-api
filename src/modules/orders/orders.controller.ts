@@ -17,8 +17,8 @@ export class OrdersController {
         ok: [OrderListResponseSchema, 'Pedidos encontrados. status e payment_method são enums.'],
     })
     async findAll(@ZodQuery(FindAllOrdersQuerySchema) query: FindAllOrdersDto) {
-        const orders = await this.orderService.findAll(query)
-        return { message: 'Pedidos encontrados com sucesso', orders }
+        const data = await this.orderService.findAll(query)
+        return { message: 'Pedidos encontrados com sucesso', orders: data.orders, pagination: data.pagination }
     }
 
     @Get(':id')
